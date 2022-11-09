@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       labels:
-	app: ed-gen-nginx
+        app: ed-gen-nginx
     spec:
       containers:
       - name: ed-gen-nginx
