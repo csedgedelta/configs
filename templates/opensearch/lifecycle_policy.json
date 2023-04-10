@@ -1,0 +1,39 @@
+PUT /_plugins/_ism/policies/ed-agent-log-policy?pretty
+{
+    "policy": {
+        "policy_id": "ed-agent-log-policy",
+        "description": "Example EdgeDelta Agent Policy",
+        "schema_version": 1,
+        "error_notification": null,
+        "default_state": "hot",
+        "states": [
+            {
+                "name": "hot",
+                "actions": [
+                    {
+                        "retry": {
+                            "count": 3,
+                            "backoff": "exponential",
+                            "delay": "1m"
+                        },
+                        "rollover": {
+                            "min_size": "5gb",
+                            "min_index_age": "1s"
+                        }
+                    },
+                    {
+                        "timeout": "15d",
+                        "retry": {
+                            "count": 3,
+                            "backoff": "exponential",
+                            "delay": "1m"
+                        },
+                        "delete": {}
+                    }
+                ],
+                "transitions": []
+            }
+        ],
+        "ism_template": []
+    }
+}
