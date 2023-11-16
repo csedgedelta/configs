@@ -1,0 +1,212 @@
+version: v3
+
+settings:
+  tag: edv3-hosted-lambda-datadog
+  log:
+    level: info
+  archive_flush_interval: 60s
+  archive_max_byte_limit: 16MB
+  multiline_max_byte_size: 11M
+  max_incomplete_line_buffer_size: 10MB
+
+links:
+- from: file_input_lambda_logs
+  to: body_to_attributes
+- from: ed_component_health
+  to: ed_health
+- from: ed_agent_stats
+  to: ed_metrics_output
+- from: ed_node_health
+  to: ed_health
+- from: ed_pipeline_io_stats
+  to: chad+datadog01
+- from: ed_pipeline_io_stats
+  to: ed_metrics_output
+- from: body_to_attributes
+  to: extract_message
+- from: body_to_attributes
+  path: failure
+  to: extract_message
+- from: extract_message
+  to: route
+- from: extract_message
+  path: failure
+  to: route
+- from: common_tags
+  to: mapper
+- from: common_tags
+  to: ed_archive_output
+- from: mapper
+  to: chad+datadog01
+- from: common_output
+  to: common_tags
+- from: route
+  path: report
+  to: report_output
+- from: route
+  path: begin
+  to: begin_output
+- from: route
+  path: end
+  to: end_output
+- from: route
+  path: function
+  to: function_output
+- from: report_output
+  to: common_output
+- from: begin_output
+  to: common_output
+- from: end_output
+  to: common_output
+- from: function_output
+  to: common_output
+
+nodes:
+- name: file_input_lambda_logs
+  type: file_input
+  path: /var/captured_requests/body_*.json
+- name: ed_component_health
+  type: ed_component_health_input
+- name: ed_agent_stats
+  type: ed_agent_stats_input
+- name: ed_node_health
+  type: ed_node_health_input
+- name: ed_pipeline_io_stats
+  type: ed_pipeline_io_stats_input
+- name: ed_health
+  type: ed_health_output
+- name: ed_archive_output
+  type: ed_archive_output
+- name: body_to_attributes
+  type: parse_json_attributes
+  process_field: item.body
+- name: extract_message
+  type: extract_json_field
+  field_path: message
+  keep_log_if_failed: true
+- name: common_tags
+  type: log_transform
+  transformations:
+  - field_path: attributes.tags.account_id
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags
+    operation: upsert
+    value: merge(item["attributes"]["faas"]["tags"], item["attributes"]["tags"])
+  - field_path: attributes.tags.architecture
+    operation: upsert
+    value: item["attributes"]["host.arch"]
+  - field_path: attributes.tags.aws_account
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags.dd_extension_version
+    operation: upsert
+    value: '"48"'
+  - field_path: attributes.tags.function_arn
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.tags.functionname
+    operation: upsert
+    value: item["attributes"]["faas"]["name"]
+  - field_path: attributes.tags.region
+    operation: upsert
+    value: item["attributes"]["cloud"]["region"]
+  - field_path: attributes.tags.runtime
+    operation: upsert
+    value: item["attributes"]["process.runtime.name"]
+  - field_path: attributes.tags.memorysize
+    operation: upsert
+    value: item["attributes"]["faas"]["memory_size"]
+  - field_path: attributes.tags.resource
+    operation: upsert
+    value: item["attributes"]["faas"]["name"]
+- name: chad+datadog01
+  type: datadog_output
+  node_reference: chad+datadog01
+- name: mapper
+  type: datadog_mapper
+  dd_message: item["attributes"]["output"]
+  dd_tags: item["attributes"]["tags"]
+  dd_source: regex_capture(item["attributes"]["cloud"]["resource_id"], "arn:aws:(?P<match>\\d*|\\w*):").match
+  dd_host: item.attributes.cloud.resource_id
+  dd_datatype: '"log"'
+- name: common_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.lambda.arn
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.output.lambda.request_id
+    operation: upsert
+    value: item["attributes"]["faas"]["request_id"]
+  - field_path: attributes.output.timestamp
+    operation: upsert
+    value: item["attributes"]["timestamp"]
+  - field_path: attributes.output.status
+    operation: upsert
+    value: '"info"'
+  - field_path: attributes.output.service
+    operation: upsert
+    value: '"output-agent"'
+- name: route
+  type: route
+  paths:
+  - path: report
+    condition: regex_match(item.attributes.log_type,"platform.report")
+    exit_if_matched: true
+  - path: begin
+    condition: regex_match(item.attributes.log_type,"platform.start")
+    exit_if_matched: true
+  - path: end
+    condition: regex_match(item.attributes.log_type,"platform.runtimeDone")
+    exit_if_matched: true
+  - path: function
+    condition: regex_match(item.attributes.log_type,"function")
+    exit_if_matched: true
+- name: report_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.duration
+    operation: upsert
+    value: item["attributes"]["faas.duration_ms"]
+  - field_path: attributes.output.lambda.billed_duration
+    operation: upsert
+    value: item["attributes"]["faas.billed_duration_ms"]
+  - field_path: attributes.output.lambda.init_duration
+    operation: upsert
+    value: item["attributes"]["faas.init_duration_ms"]
+  - field_path: attributes.output.lambda.max_memory_used
+    operation: upsert
+    value: item["attributes"]["faas.max_memory_used"]
+  - field_path: attributes.output.message
+    operation: upsert
+    value: '"REPORT"'
+- name: begin_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.lambda.step
+    operation: upsert
+    value: item["attributes"]["faas"]["step"]
+  - field_path: attributes.output.lambda.version
+    operation: upsert
+    value: item["attributes"]["faas"]["version"]
+  - field_path: attributes.output.message
+    operation: upsert
+    value: item["attributes"]["message"]
+- name: end_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.lambda.step
+    operation: upsert
+    value: item["attributes"]["faas"]["step"]
+  - field_path: attributes.output.message
+    operation: upsert
+    value: item["attributes"]["message"]
+- name: function_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.message
+    operation: upsert
+    value: item["attributes"]["message"]
+- name: ed_metrics_output
+  type: ed_metrics_output

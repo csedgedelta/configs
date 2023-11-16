@@ -1,0 +1,471 @@
+version: v3
+
+settings:
+  tag: edv3-hosted-cloudwatch-datadog
+  log:
+    level: info
+  archive_flush_interval: 60s
+  archive_max_byte_limit: 16MB
+  multiline_max_byte_size: 11M
+  max_incomplete_line_buffer_size: 10MB
+
+links:
+- from: ed_component_health
+  to: ed_health
+- from: ed_node_health
+  to: ed_health
+- from: ed_agent_stats
+  to: ed_metrics_output
+- from: ed_pipeline_io_stats
+  to: chad+datadog01
+- from: ed_pipeline_io_stats
+  to: ed_metrics_output
+- from: file_input
+  to: body_attributes
+- from: body_attributes
+  to: route
+- from: body_attributes
+  path: failure
+  to: route
+- from: lambda_extract_logEvents
+  to: lambda_parse_body_event
+- from: lambda_extract_logEvents
+  path: failure
+  to: lambda_parse_body_event
+- from: lambda_tags
+  to: delete_logEvents
+- from: lambda_tags
+  to: datadog_mapper
+- from: lambda_output
+  to: lambda_tags
+- from: lambda_parse_body_event
+  to: lambda_output
+- from: lambda_parse_body_event
+  path: failure
+  to: lambda_output
+- from: route
+  path: lambda
+  to: enrich_lambda
+- from: route
+  path: ecs
+  to: enrich_ecs
+- from: route
+  path: ec2
+  to: enrich_ec2
+- from: route
+  path: unmatched
+  to: enrich_unmatched
+- from: enrich_lambda
+  to: lambda_extract_logEvents
+- from: enrich_lambda
+  path: failure
+  to: lambda_extract_logEvents
+- from: enrich_ecs
+  to: ecs_extract_logEvents
+- from: enrich_ecs
+  path: failure
+  to: ecs_extract_logEvents
+- from: enrich_ec2
+  to: ec2_extract_logEvents
+- from: enrich_ec2
+  path: failure
+  to: ec2_extract_logEvents
+- from: enrich_unmatched
+  to: unmatched_extract_logEvents
+- from: enrich_unmatched
+  path: failure
+  to: unmatched_extract_logEvents
+- from: ec2_extract_logEvents
+  to: ec2_parse_body
+- from: ec2_extract_logEvents
+  path: failure
+  to: ec2_parse_body
+- from: ec2_parse_body
+  to: ec2_output
+- from: ec2_parse_body
+  path: failure
+  to: ec2_output
+- from: ec2_output
+  to: ec2_tags
+- from: ec2_tags
+  to: delete_logEvents
+- from: ec2_tags
+  to: datadog_mapper
+- from: ecs_extract_logEvents
+  to: ecs_parse_body
+- from: ecs_extract_logEvents
+  path: failure
+  to: ecs_parse_body
+- from: ecs_parse_body
+  to: ecs_output
+- from: ecs_parse_body
+  path: failure
+  to: ecs_output
+- from: ecs_output
+  to: ecs_tags
+- from: ecs_tags
+  to: delete_logEvents
+- from: ecs_tags
+  to: datadog_mapper
+- from: unmatched_extract_logEvents
+  to: unmatched_parse_body
+- from: unmatched_extract_logEvents
+  path: failure
+  to: unmatched_parse_body
+- from: unmatched_parse_body
+  to: unmatched_output
+- from: unmatched_parse_body
+  path: failure
+  to: unmatched_output
+- from: unmatched_output
+  to: unmatched_tags
+- from: unmatched_tags
+  to: delete_logEvents
+- from: unmatched_tags
+  to: datadog_mapper
+- from: delete_logEvents
+  to: ed_archive
+- from: datadog_mapper
+  to: chad+datadog01
+
+nodes:
+- name: ed_component_health
+  type: ed_component_health_input
+- name: ed_node_health
+  type: ed_node_health_input
+- name: ed_agent_stats
+  type: ed_agent_stats_input
+- name: ed_pipeline_io_stats
+  type: ed_pipeline_io_stats_input
+- name: ed_archive
+  type: ed_archive_output
+- name: ed_health
+  type: ed_health_output
+- name: file_input
+  type: file_input
+  path: /var/captured_requests/body_*.json
+  line_pattern: '{"cloud":'
+- name: body_attributes
+  type: parse_json_attributes
+  process_field: item.body
+- name: lambda_extract_logEvents
+  type: extract_json_field
+  field_path: logEvents.[*]
+  keep_log_if_failed: true
+- name: chad+datadog01
+  type: datadog_output
+  node_reference: chad+datadog01
+- name: lambda_tags
+  type: log_transform
+  transformations:
+  - field_path: attributes.tags.account_id
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags
+    operation: upsert
+    value: merge(item["attributes"]["tags"],item["attributes"]["faas"]["tags"])
+  - field_path: attributes.tags.aws_account
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags.forwarder_memorysize
+    operation: upsert
+    value: item["attributes"]["faas"]["memory_size"]
+  - field_path: attributes.tags.forwarder_version
+    operation: upsert
+    value: '"1.0"'
+  - field_path: attributes.tags.forwardername
+    operation: upsert
+    value: item.resource["host.name"]
+  - field_path: attributes.tags.region
+    operation: upsert
+    value: item["attributes"]["cloud"]["region"]
+  - field_path: attributes.tags.functionname
+    operation: upsert
+    value: item["attributes"]["faas"]["name"]
+  - field_path: attributes.tags.service
+    operation: delete
+- name: lambda_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.aws.awslogs.logGroup
+    operation: upsert
+    value: item["attributes"]["aws"]["log.group.name"]
+  - field_path: attributes.output.aws.awslogs.logStream
+    operation: upsert
+    value: item["attributes"]["aws"]["log.stream.name"]
+  - field_path: attributes.output.aws.awslogs.owner
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.output.aws.function_version
+    operation: upsert
+    value: item["attributes"]["faas"]["version"]
+  - field_path: attributes.output.aws.invoked_function_arn
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.output.lambda.arn
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.output.lambda.request_id
+    operation: upsert
+    value: item["attributes"]["faas"]["request_id"]
+  - field_path: attributes.output.id
+    operation: upsert
+    value: item["attributes"]["id"]
+  - field_path: attributes.output.message
+    operation: upsert
+    value: item["attributes"]["message"]
+  - field_path: attributes.output.timestamp
+    operation: upsert
+    value: item["attributes"]["timestamp"]
+  - field_path: attributes.output.service
+    operation: delete
+- name: lambda_parse_body_event
+  type: parse_json_attributes
+  process_field: item.body
+- name: route
+  type: route
+  paths:
+  - path: lambda
+    condition: regex_match(item["attributes"]["aws"]["log.group.name"], "/lambda/.*")
+    exit_if_matched: true
+  - path: ecs
+    condition: regex_match(item["attributes"]["aws"]["log.group.name"], "/ecs/.*")
+  - path: ec2
+    condition: regex_match(item["attributes"]["aws"]["log.group.name"], "/ec2/.*")
+- name: ed_metrics_output
+  type: ed_metrics_output
+- name: enrich_lambda
+  type: enrich
+  field_mappings:
+  - field_name: logtype
+    value: '"lambda"'
+- name: enrich_ecs
+  type: enrich
+  field_mappings:
+  - field_name: logtype
+    value: '"ecs"'
+- name: enrich_ec2
+  type: enrich
+  field_mappings:
+  - field_name: logtype
+    value: '"ec2"'
+- name: enrich_unmatched
+  type: enrich
+  field_mappings:
+  - field_name: logtype
+    value: '"unmatched"'
+- name: ec2_extract_logEvents
+  type: extract_json_field
+  field_path: logEvents.[*]
+- name: ec2_parse_body
+  type: parse_json_attributes
+  process_field: item.body
+- name: ec2_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.aws.awslogs.logGroup
+    operation: upsert
+    value: item["attributes"]["aws"]["log.group.name"]
+  - field_path: attributes.output.aws.awslogs.logStream
+    operation: upsert
+    value: item["attributes"]["aws"]["log.stream.name"]
+  - field_path: attributes.output.aws.awslogs.owner
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.output.aws.function_version
+    operation: upsert
+    value: item["attributes"]["faas"]["version"]
+  - field_path: attributes.output.aws.invoked_function_arn
+    operation: upsert
+    value: item["attributes"]["aws"]["log.group.name"]
+  - field_path: attributes.output.aws.host
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.output.aws.id
+    operation: upsert
+    value: item["attributes"]["id"]
+  - field_path: attributes.output.message
+    operation: upsert
+    value: item["attributes"]["message"]
+  - field_path: attributes.output.timestamp
+    operation: upsert
+    value: item["attributes"]["timestamp"]
+  - field_path: attributes.output.service
+    operation: delete
+- name: ec2_tags
+  type: log_transform
+  transformations:
+  - field_path: attributes.tags.account_id
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags
+    operation: upsert
+    value: merge(item["attributes"]["faas"]["tags"],item["attributes"]["aws"]["service.tags"])
+  - field_path: attributes.tags.aws_account
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags.forwarder_memorysize
+    operation: upsert
+    value: item["attributes"]["faas"]["memory_size"]
+  - field_path: attributes.tags.forwarder_version
+    operation: upsert
+    value: '"1.0"'
+  - field_path: attributes.tags.forwardername
+    operation: upsert
+    value: item.resource["host.name"]
+  - field_path: attributes.tags.region
+    operation: upsert
+    value: item["attributes"]["cloud"]["region"]
+  - field_path: attributes.tags.functionname
+    operation: upsert
+    value: item["attributes"]["faas"]["name"]
+  - field_path: attributes.tags.service
+    operation: delete
+- name: ecs_extract_logEvents
+  type: extract_json_field
+  field_path: logEvents.[*]
+- name: ecs_parse_body
+  type: parse_json_attributes
+  process_field: item.body
+- name: ecs_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.aws.awslogs.logGroup
+    operation: upsert
+    value: item["attributes"]["aws"]["log.group.name"]
+  - field_path: attributes.output.aws.awslogs.logStream
+    operation: upsert
+    value: item["attributes"]["aws"]["log.stream.name"]
+  - field_path: attributes.output.aws.awslogs.owner
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.output.aws.function_version
+    operation: upsert
+    value: item["attributes"]["faas"]["version"]
+  - field_path: attributes.output.aws.invoked_function_arn
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.output.lambda.arn
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.output.id
+    operation: upsert
+    value: item["attributes"]["id"]
+  - field_path: attributes.output.message
+    operation: upsert
+    value: item["attributes"]["message"]
+  - field_path: attributes.output.timestamp
+    operation: upsert
+    value: item["attributes"]["timestamp"]
+  - field_path: attributes.output.service
+    operation: delete
+- name: ecs_tags
+  type: log_transform
+  transformations:
+  - field_path: attributes.tags.account_id
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags
+    operation: upsert
+    value: merge(item["attributes"]["aws"]["service.tags"],item["attributes"]["faas"]["tags"])
+  - field_path: attributes.tags.aws_account
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags.forwarder_memorysize
+    operation: upsert
+    value: item["attributes"]["faas"]["memory_size"]
+  - field_path: attributes.tags.forwarder_version
+    operation: upsert
+    value: '"1.0"'
+  - field_path: attributes.tags.forwardername
+    operation: upsert
+    value: item.resource["host.name"]
+  - field_path: attributes.tags.region
+    operation: upsert
+    value: item["attributes"]["cloud"]["region"]
+  - field_path: attributes.tags.functionname
+    operation: upsert
+    value: item["attributes"]["faas"]["name"]
+  - field_path: attributes.tags.service
+    operation: delete
+- name: unmatched_extract_logEvents
+  type: extract_json_field
+  field_path: logEvents.[*]
+- name: unmatched_parse_body
+  type: parse_json_attributes
+  process_field: item.body
+- name: unmatched_output
+  type: log_transform
+  transformations:
+  - field_path: attributes.output.aws.awslogs.logGroup
+    operation: upsert
+    value: item["attributes"]["aws"]["log.group.name"]
+  - field_path: attributes.output.aws.awslogs.logStream
+    operation: upsert
+    value: item["attributes"]["aws"]["log.stream.name"]
+  - field_path: attributes.output.aws.awslogs.owner
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.output.aws.function_version
+    operation: upsert
+    value: item["attributes"]["faas"]["version"]
+  - field_path: attributes.output.aws.invoked_function_arn
+    operation: upsert
+    value: item["attributes"]["aws"]["log.group.name"]
+  - field_path: attributes.output.aws.host
+    operation: upsert
+    value: item["attributes"]["cloud"]["resource_id"]
+  - field_path: attributes.output.aws.id
+    operation: upsert
+    value: item["attributes"]["id"]
+  - field_path: attributes.output.message
+    operation: upsert
+    value: item["attributes"]["message"]
+  - field_path: attributes.output.timestamp
+    operation: upsert
+    value: item["attributes"]["timestamp"]
+  - field_path: attributes.output.service
+    operation: delete
+- name: unmatched_tags
+  type: log_transform
+  transformations:
+  - field_path: attributes.tags.account_id
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags
+    operation: upsert
+    value: merge(item["attributes"]["faas"]["tags"],item["attributes"]["faas"]["tags"])
+  - field_path: attributes.tags.aws_account
+    operation: upsert
+    value: item["attributes"]["cloud"]["account_id"]
+  - field_path: attributes.tags.forwarder_memorysize
+    operation: upsert
+    value: item["attributes"]["faas"]["memory_size"]
+  - field_path: attributes.tags.forwarder_version
+    operation: upsert
+    value: '"1.0"'
+  - field_path: attributes.tags.forwardername
+    operation: upsert
+    value: item.resource["host.name"]
+  - field_path: attributes.tags.region
+    operation: upsert
+    value: item["attributes"]["cloud"]["region"]
+  - field_path: attributes.tags.functionname
+    operation: upsert
+    value: item["attributes"]["faas"]["name"]
+  - field_path: attributes.tags.service
+    operation: delete
+- name: delete_logEvents
+  type: log_transform
+  transformations:
+  - field_path: attributes.logEvents
+    operation: delete
+- name: datadog_mapper
+  type: datadog_mapper
+  dd_message: item["attributes"]["output"]
+  dd_tags: item["attributes"]["tags"]
+  dd_source: regex_capture(item.attributes.cloud.resource_id, "arn:aws:(?P<match>\\d*|\\w*):").match
+  dd_source_name: regex_capture(item.attributes.cloud.resource_id, "arn:aws:(?P<match>\\d*|\\w*):").match
+  dd_host: item["resource"]["host.name"]
+  dd_service: item["attributes"]["cloud"]["resource_id"]
+  dd_level: '"INFO"'
