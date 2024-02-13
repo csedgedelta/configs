@@ -1,0 +1,28 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: ed-gen-long
+  labels:
+    name: ed-gen-long
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ed-gen-long
+  namespace: ed-gen-long
+  labels:
+    app: ed-gen-long
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ed-gen-long
+  template:
+    metadata:
+      labels:
+        app: ed-gen-long
+    spec:
+      containers:
+      - name: ed-gen-long
+        image: chadtsigler/ed-gen-long:latest
+
