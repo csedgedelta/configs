@@ -1,0 +1,33 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: qa-nginx-json-single-emptydir
+  labels:
+    name: qa-nginx-json-single-emptydir
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-nginx-json-single-emptydir
+  namespace: qa-nginx-json-single-emptydir
+  labels:
+    app: qa-nginx-json-single-emptydir
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qa-nginx-json-single-emptydir
+  template:
+    metadata:
+      labels:
+        app: qa-nginx-json-single-emptydir
+    spec:
+      containers:
+      - name: qa-nginx-json-single-emptydir
+        image: chadtsigler/qa-nginx-json-single-emptydir:latest
+        volumeMounts:
+           - name: log
+             mountPath: /log
+      volumes:
+      - name: log
+        emptyDir: {}
