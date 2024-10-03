@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: qa-json-single-emptydir
-        image: chadtsigler/qa-json-single-emptydir:latest
+        image: chadtsigler/qa-json-single-file:latest
         volumeMounts:
            - name: log
              mountPath: /log

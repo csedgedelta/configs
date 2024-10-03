@@ -21,6 +21,7 @@ spec:
     metadata:
       labels:
         app: qa-json-multi-file
+    spec:    
       containers:
       - name: qa-json-multi-file
         image: chadtsigler/qa-json-multi-file:latest

@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: qa-string-single-emptydir
-        image: chadtsigler/qa-string-single-emptydir:latest
+        image: chadtsigler/qa-string-single-file:latest
         volumeMounts:
            - name: log
              mountPath: /log

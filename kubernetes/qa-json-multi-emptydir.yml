@@ -21,9 +21,10 @@ spec:
     metadata:
       labels:
         app: qa-json-multi-emptydir
+    spec:    
       containers:
       - name: qa-json-multi-emptydir
-        image: chadtsigler/qa-json-multi-emptydir:latest
+        image: chadtsigler/qa-json-multi-file:latest
         volumeMounts:
            - name: log
              mountPath: /log

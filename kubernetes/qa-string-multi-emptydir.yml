@@ -1,30 +1,30 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: qa-string-multi-stdout
+  name: qa-string-multi-emptydir
   labels:
-    name: qa-string-multi-stdout
+    name: qa-string-multi-emptydir
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: qa-string-multi-stdout
-  namespace: qa-string-multi-stdout
+  name: qa-string-multi-emptydir
+  namespace: qa-string-multi-emptydir
   labels:
-    app: qa-string-multi-stdout
+    app: qa-string-multi-emptydir
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: qa-string-multi-stdout
+      app: qa-string-multi-emptydir
   template:
     metadata:
       labels:
-        app: qa-string-multi-stdout
+        app: qa-string-multi-emptydir
     spec:
       containers:
-      - name: qa-string-multi-stdout
-        image: chadtsigler/qa-string-multi-stdout:latest
+      - name: qa-string-multi-emptydir
+        image: chadtsigler/qa-string-multi-file:latest
         volumeMounts:
            - name: log
              mountPath: /log
