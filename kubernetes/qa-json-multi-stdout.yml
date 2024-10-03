@@ -1,0 +1,29 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: qa-json-multi-stdout
+  labels:
+    name: qa-json-multi-stdout
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-json-multi-stdout
+  namespace: qa-json-multi-stdout
+  labels:
+    app: qa-json-multi-stdout
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qa-json-multi-stdout
+  template:
+    metadata:
+      labels:
+        app: qa-json-multi-stdout
+    spec:
+      containers:
+      - name: qa-json-multi-stdout
+        image: chadtsigler/qa-json-multi-stdout:latest
+
+

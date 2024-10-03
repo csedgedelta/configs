@@ -1,0 +1,35 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: qa-string-single-file
+  labels:
+    name: qa-string-single-file
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-string-single-file
+  namespace: qa-string-single-file
+  labels:
+    app: qa-string-single-file
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qa-string-single-file
+  template:
+    metadata:
+      labels:
+        app: qa-string-single-file
+    spec:
+      containers:
+      - name: qa-string-single-file
+        image: chadtsigler/qa-string-single-file:latest
+        volumeMounts:
+           - name: log
+             mountPath: /log
+      volumes:
+      - name: log
+        hostPath:
+          path: /var/log
+          type: Directory

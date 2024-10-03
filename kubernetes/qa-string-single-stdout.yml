@@ -1,0 +1,29 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: qa-string-single-stdout
+  labels:
+    name: qa-string-single-stdout
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-string-single-stdout
+  namespace: qa-string-single-stdout
+  labels:
+    app: qa-string-single-stdout
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qa-string-single-stdout
+  template:
+    metadata:
+      labels:
+        app: qa-string-single-stdout
+    spec:
+      containers:
+      - name: qa-string-single-stdout
+        image: chadtsigler/qa-string-single-stdout:latest
+
+

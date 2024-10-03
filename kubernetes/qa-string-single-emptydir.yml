@@ -1,0 +1,35 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: qa-string-single-emptydir
+  labels:
+    name: qa-string-single-emptydir
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-string-single-emptydir
+  namespace: qa-string-single-emptydir
+  labels:
+    app: qa-string-single-emptydir
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qa-string-single-emptydir
+  template:
+    metadata:
+      labels:
+        app: qa-string-single-emptydir
+    spec:
+      containers:
+      - name: qa-string-single-emptydir
+        image: chadtsigler/qa-string-single-emptydir:latest
+        volumeMounts:
+           - name: log
+             mountPath: /log
+      volumes:
+      - name: log
+        emptyDir: {}
+
+

@@ -1,29 +1,29 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: qa-nginx-json-multi-file
+  name: qa-json-multi-file
   labels:
-    name: qa-nginx-json-multi-file
+    name: qa-json-multi-file
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: qa-nginx-json-multi-file
-  namespace: qa-nginx-json-multi-file
+  name: qa-json-multi-file
+  namespace: qa-json-multi-file
   labels:
-    app: qa-nginx-json-multi-file
+    app: qa-json-multi-file
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: qa-nginx-json-multi-file
+      app: qa-json-multi-file
   template:
     metadata:
       labels:
-        app: qa-nginx-json-multi-file
+        app: qa-json-multi-file
       containers:
-      - name: qa-nginx-json-multi-file
-        image: chadtsigler/qa-nginx-json-multi-file:latest
+      - name: qa-json-multi-file
+        image: chadtsigler/qa-json-multi-file:latest
         volumeMounts:
            - name: log
              mountPath: /log

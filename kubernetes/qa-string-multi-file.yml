@@ -1,30 +1,30 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: qa-nginx-json-single-file
+  name: qa-string-multi-file
   labels:
-    name: qa-nginx-json-single-file
+    name: qa-string-multi-file
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: qa-nginx-json-single-file
-  namespace: qa-nginx-json-single-file
+  name: qa-string-multi-file
+  namespace: qa-string-multi-file
   labels:
-    app: qa-nginx-json-single-file
+    app: qa-string-multi-file
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: qa-nginx-json-single-file
+      app: qa-string-multi-file
   template:
     metadata:
       labels:
-        app: qa-nginx-json-single-file
+        app: qa-string-multi-file
     spec:
       containers:
-      - name: qa-nginx-json-single-file
-        image: chadtsigler/qa-nginx-json-single-file:latest
+      - name: qa-string-multi-file
+        image: chadtsigler/qa-string-multi-file:latest
         volumeMounts:
            - name: log
              mountPath: /log
@@ -33,3 +33,4 @@ spec:
         hostPath:
           path: /var/log
           type: Directory
+

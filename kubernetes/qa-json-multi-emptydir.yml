@@ -1,0 +1,32 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: qa-json-multi-emptydir
+  labels:
+    name: qa-json-multi-emptydir
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-json-multi-emptydir
+  namespace: qa-json-multi-emptydir
+  labels:
+    app: qa-json-multi-emptydir
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: qa-json-multi-emptydir
+  template:
+    metadata:
+      labels:
+        app: qa-json-multi-emptydir
+      containers:
+      - name: qa-json-multi-emptydir
+        image: chadtsigler/qa-json-multi-emptydir:latest
+        volumeMounts:
+           - name: log
+             mountPath: /log
+      volumes:
+      - name: log
+        emptyDir: {}
