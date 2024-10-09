@@ -4,7 +4,7 @@ import datetime
 import sys
 import json
 import os
-
+import uuid
 
 def gen_log():
     w1 = 'REMOTEIP - - [TIMESTAMP +0000] "METHOD / HTTP/1.1" STATUS BYTES "REFERRER" "AGENT" "-" rl=REQUESTLENGTH rt=REQUESTTIME uct="CONNECTTIME" uht="HEADERTIME" urt="RESPONSETIME"'
@@ -93,7 +93,7 @@ def write_file(fo,mm):
     f.write('\n')
 
 def main():
-    file = "/log/output.log"
+    file = "/log/" + str(uuid.uuid4())+ ".log"
     try:
       os.mkdir("/log")
     except FileExistsError:
