@@ -24,6 +24,6 @@ spec:
     spec:
       containers:
       - name: qa-string-single-stdout
-        image: chadtsigler/qa-string-single-stdout:latest
+        image: chadtsigler/qa-string-single-stdout:1.0.1
 
 

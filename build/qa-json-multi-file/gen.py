@@ -115,6 +115,7 @@ def write_file(fo,mm):
 
 def main():
     file = "/log/test/" + str(uuid.uuid4())+ ".log"
+    print(file)
     try:
       os.mkdirs("/log/test")
       

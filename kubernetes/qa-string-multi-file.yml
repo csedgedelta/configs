@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: qa-string-multi-file
-        image: chadtsigler/qa-string-multi-file:latest
+        image: chadtsigler/qa-string-multi-file:1.0.1
         volumeMounts:
            - name: log
              mountPath: /log

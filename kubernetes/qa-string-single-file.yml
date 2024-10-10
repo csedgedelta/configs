@@ -24,7 +24,8 @@ spec:
     spec:
       containers:
       - name: qa-string-single-file
-        image: chadtsigler/qa-string-single-file:latest
+        image: chadtsigler/qa-string-single-file:1.0.1
+        imagePullPolicy: "Always"
         volumeMounts:
            - name: log
              mountPath: /log

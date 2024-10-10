@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: qa-json-single-file
-        image: chadtsigler/qa-json-single-file:latest
+        image: chadtsigler/qa-json-single-file:1.0.1
         imagePullPolicy: "Always"
         volumeMounts:
            - name: log
