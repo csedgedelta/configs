@@ -104,9 +104,9 @@ def write_file(fo,mm):
 
 def main():
     
-    file = "/log/" + str(uuid.uuid4())+ ".log"
+    file = "/log/test/" + str(uuid.uuid4())+ ".log"
     try:
-      os.mkdir("/log")
+       os.mkdirs("/log/test")
     except FileExistsError:
       pass
     while True:

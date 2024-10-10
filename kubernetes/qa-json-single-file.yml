@@ -25,6 +25,7 @@ spec:
       containers:
       - name: qa-json-single-file
         image: chadtsigler/qa-json-single-file:latest
+        imagePullPolicy: "Always"
         volumeMounts:
            - name: log
              mountPath: /log
